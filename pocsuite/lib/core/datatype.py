@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2014-2015 pocsuite developers (http://sebug.net)
+Copyright (c) 2014-2016 pocsuite developers (https://seebug.org)
 See the file 'docs/COPYING' for copying permission
 """
 
 import copy
 import types
 
-from exception import PocsuiteDataException
+from pocsuite.lib.core.exception import PocsuiteDataException
 
 
 class AttribDict(dict):

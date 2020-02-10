@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2014-2015 pocsuite developers (http://sebug.net)
+Copyright (c) 2014-2016 pocsuite developers (https://seebug.org)
 See the file 'docs/COPYING' for copying permission
 """
 
 import logging
 import sys
 
-from lib.core.enums import CUSTOM_LOGGING
+from pocsuite.lib.core.enums import CUSTOM_LOGGING
 
 logging.addLevelName(CUSTOM_LOGGING.SYSINFO, "*")
 logging.addLevelName(CUSTOM_LOGGING.SUCCESS, "+")
@@ -20,7 +20,7 @@ LOGGER = logging.getLogger("pocsuiteLog")
 
 LOGGER_HANDLER = None
 try:
-    from thirdparty.ansistrm.ansistrm import ColorizingStreamHandler
+    from pocsuite.thirdparty.ansistrm.ansistrm import ColorizingStreamHandler
 
     disableColor = False
 

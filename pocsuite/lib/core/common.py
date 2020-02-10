@@ -2,28 +2,87 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2014-2015 pocsuite developers (http://sebug.net)
+Copyright (c) 2014-2016 pocsuite developers (https://seebug.org)
 See the file 'docs/COPYING' for copying permission
 """
 
 import os
 import re
 import sys
+import imp
 import ntpath
+import locale
 import inspect
 import posixpath
+import marshal
 import unicodedata
-from lib.core.data import conf
-from lib.core.convert import stdoutencode
-from lib.core.log import LOGGER_HANDLER
-from lib.core.data import paths
-from lib.core.exception import PocsuiteGenericException
-from thirdparty.odict.odict import OrderedDict
-from lib.core.settings import (BANNER, GIT_PAGE, ISSUES_PAGE, PLATFORM, PYVERSION,
-                               VERSION_STRING)
-from lib.core.settings import UNICODE_ENCODING, INVALID_UNICODE_CHAR_FORMAT
-from lib.core.exception import PocsuiteSystemException
-from thirdparty.termcolor.termcolor import colored
+import time
+from pocsuite.lib.core.data import conf
+from pocsuite.lib.core.convert import stdoutencode
+from pocsuite.lib.core.log import LOGGER_HANDLER
+from pocsuite.lib.core.data import paths
+from pocsuite.lib.core.exception import PocsuiteGenericException
+from pocsuite.thirdparty.odict.odict import OrderedDict
+from pocsuite.lib.core.settings import (BANNER, GIT_PAGE, ISSUES_PAGE, PLATFORM, PYVERSION, VERSION_STRING)
+from pocsuite.lib.core.settings import UNICODE_ENCODING, INVALID_UNICODE_CHAR_FORMAT
+from pocsuite.lib.core.exception import PocsuiteSystemException
+from pocsuite.thirdparty.termcolor.termcolor import colored
+
+
+class StringImporter(object):
+
+    """
+    Use custom meta hook to import modules available as strings.
+    Cp. PEP 302 http://www.python.org/dev/peps/pep-0302/#specification-part-2-registering-hooks
+    """
+
+    def __init__(self, fullname, contents):
+        self.fullname = fullname
+        self.contents = contents
+
+    def load_module(self, fullname):
+        if fullname in sys.modules:
+            return sys.modules[fullname]
+
+        mod = sys.modules.setdefault(fullname, imp.new_module(fullname))
+        mod.__file__ = "<%s>" % fullname
+        mod.__loader__ = self
+        if conf.isPycFile:
+            code = marshal.loads(self.contents[8:])
+        else:
+            code = compile(self.contents, mod.__file__, "exec")
+        exec code in mod.__dict__
+        return mod
+
+
+def delModule(modname, paranoid=None):
+    from sys import modules
+    try:
+        thismod = modules[modname]
+    except KeyError:
+        raise ValueError(modname)
+    these_symbols = dir(thismod)
+    if paranoid:
+        try:
+            paranoid[:]  # sequence support
+        except:
+            raise ValueError('must supply a finite list for paranoid')
+        else:
+            these_symbols = paranoid[:]
+    del modules[modname]
+    for mod in modules.values():
+        try:
+            delattr(mod, modname)
+        except AttributeError:
+            pass
+        if paranoid:
+            for symbol in these_symbols:
+                if symbol[:2] == '__':  # ignore special symbols
+                    continue
+                try:
+                    delattr(mod, symbol)
+                except AttributeError:
+                    pass
 
 
 def banner():
@@ -40,20 +99,21 @@ def dataToStdout(data, bold=False):
     """
     Writes text to the stdout (console) stream
     """
+    if 'quiet' not in conf or not conf.quiet:
+        message = ""
 
-    message = ""
+        if isinstance(data, unicode):
+            message = stdoutencode(data)
+        else:
+            message = data
 
-    if isinstance(data, unicode):
-        message = stdoutencode(data)
-    else:
-        message = data
+        sys.stdout.write(setColor(message, bold))
 
-    sys.stdout.write(setColor(message, bold))
-
-    try:
-        sys.stdout.flush()
-    except IOError:
-        pass
+        try:
+            sys.stdout.flush()
+        except IOError:
+            pass
+    return
 
 
 def setColor(message, bold=False):
@@ -125,7 +185,7 @@ def getUnicode(value, encoding=None, noneToNull=False):
     """
 
     if noneToNull and value is None:
-        return NULL
+        return u'NULL'
 
     if isListLike(value):
         value = list(getUnicode(_, encoding, noneToNull) for _ in value)
@@ -163,7 +223,6 @@ def isListLike(value):
 
 
 def readFile(filename):
-    fileObject = open(filename)
     try:
         with open(filename) as f:
             retVal = f.read()
@@ -189,16 +248,19 @@ def setPaths():
     Sets absolute paths for project directories and files
     """
 
-    paths.POCSUITE_MODULES_PATH = os.path.join(paths.POCSUITE_ROOT_PATH, "modules")
     paths.POCSUITE_DATA_PATH = os.path.join(paths.POCSUITE_ROOT_PATH, "data")
 
-    paths.POCSUITE_TMP_PATH = os.path.join(paths.POCSUITE_MODULES_PATH, "tmp")
     paths.USER_AGENTS = os.path.join(paths.POCSUITE_DATA_PATH, "user-agents.txt")
     paths.WEAK_PASS = os.path.join(paths.POCSUITE_DATA_PATH, "password-top100.txt")
     paths.LARGE_WEAK_PASS = os.path.join(paths.POCSUITE_DATA_PATH, "password-top1000.txt")
 
     _ = os.path.join(os.path.expanduser("~"), ".pocsuite")
     paths.POCSUITE_OUTPUT_PATH = getUnicode(paths.get("POCSUITE_OUTPUT_PATH", os.path.join(_, "output")), encoding=sys.getfilesystemencoding())
+
+    paths.POCSUITE_MODULES_PATH = os.path.join(_, "modules")
+    paths.POCSUITE_TMP_PATH = os.path.join(paths.POCSUITE_MODULES_PATH, "tmp")
+    paths.POCSUITE_HOME_PATH = os.path.expanduser("~")
+    paths.POCSUITE_RC_PATH = paths.POCSUITE_HOME_PATH + "/.pocsuiterc"
 
 
 def getFileItems(filename, commentPrefix='#', unicode_=True, lowercase=False, unique=False):
@@ -292,7 +354,7 @@ def safeExpandUser(filepath):
 
 def parseTargetUrl(url):
     """
-    Parse target URL 
+    Parse target URL
     """
     retVal = url
 
@@ -367,3 +429,27 @@ def reIndent(s, numSpace):
     leadingSpace = numSpace * ' '
     lines = [leadingSpace + line for line in s.splitlines()]
     return '\n'.join(lines)
+
+
+def poll_process(process, suppress_errors=False):
+    """
+    Checks for process status (prints . if still running)
+    """
+
+    while True:
+        dataToStdout(".")
+        time.sleep(1)
+
+        returncode = process.poll()
+
+        if returncode is not None:
+            if not suppress_errors:
+                if returncode == 0:
+                    dataToStdout(" done\n")
+                elif returncode < 0:
+                    dataToStdout(" process terminated by signal %d\n"
+                                 % returncode)
+                elif returncode > 0:
+                    dataToStdout(" quit unexpectedly with return code %d\n"
+                                 % returncode)
+            break

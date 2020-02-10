@@ -8,6 +8,7 @@
 .svn
 .tox
 .idea/
+.vscode
 bin
 build
 dist
@@ -18,4 +19,6 @@ man
 node_modules
 sdist
 venv
-pocsuite/modules/tmp/
+pocsuite/modules/tmp/*
+test.py
+pocsuite/api/conf.ini

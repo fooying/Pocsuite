@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2014-2015 pocsuite developers (http://sebug.net)
+Copyright (c) 2014-2016 pocsuite developers (https://seebug.org)
 See the file 'docs/COPYING' for copying permission
 """
 
@@ -10,14 +10,14 @@ import re
 import json
 import time
 from string import atof
-from lib.core.common import parseTargetUrl
-from lib.core.data import logger
-from lib.core.enums import CUSTOM_LOGGING
-from lib.core.data import kb
-from lib.core.data import conf
-from lib.core.data import resultJson
-from lib.core.data import savedReq
-from lib.request.basic import req
+from pocsuite.lib.core.common import parseTargetUrl
+from pocsuite.lib.core.data import logger
+from pocsuite.lib.core.enums import CUSTOM_LOGGING
+from pocsuite.lib.core.data import kb
+from pocsuite.lib.core.data import conf
+from pocsuite.lib.core.data import resultJson
+from pocsuite.lib.core.data import savedReq
+from pocsuite.lib.request.basic import req
 
 
 def initilizeJson(devilJson):
@@ -33,7 +33,7 @@ def showResult(tag):
     for key1, value1 in resultJson[tag].iteritems():
         for key2, value2 in value1.iteritems():
             if key1 != 'verifyInfo':
-                logger.log(CUSTOM_LOGGING.SUCCESS, key2 + " : " + resultJson[tag][key1][key2]) 
+                logger.log(CUSTOM_LOGGING.SUCCESS, key2 + " : " + resultJson[tag][key1][key2])
 
     pass
 
@@ -42,7 +42,7 @@ def execReq(poc, mode, targetUrl):
     pocInfo, devilJson = poc['pocInfo'], poc["pocExecute"]
     result = False
 
-    infoMsg = "poc-%s '%s' has already been detected against '%s'." % (pocInfo["vulID"], pocInfo["name"], targetUrl)
+    infoMsg = "poc-%s '%s' checking '%s'." % (pocInfo["vulID"], pocInfo["name"], targetUrl)
     logger.log(CUSTOM_LOGGING.SUCCESS, infoMsg)
 
     for targetJson in devilJson[mode]:

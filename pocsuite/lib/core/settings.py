@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2014-2015 pocsuite developers (http://sebug.net)
+Copyright (c) 2014-2016 pocsuite developers (https://seebug.org)
 See the file 'docs/COPYING' for copying permission
 """
 
@@ -11,11 +11,12 @@ import subprocess
 import time
 import sys
 
-from lib.core.revision import getRevisionNumber
+from pocsuite.lib.core.revision import getRevisionNumber
+from pocsuite import __version__
 
-VERSION = "0.3"
+VERSION = __version__
 REVISION = getRevisionNumber()
-SITE = "http://sebug.net"
+SITE = "http://pocsuite.org"
 VERSION_STRING = "pocsuite/%s%s" % (VERSION, "-%s" % REVISION if REVISION else "-nongit-%s" % time.strftime("%Y%m%d", time.gmtime(os.path.getctime(__file__))))
 
 IS_WIN = subprocess.mswindows
@@ -24,7 +25,7 @@ PLATFORM = os.name
 PYVERSION = sys.version.split()[0]
 
 ISSUES_PAGE = "https://github.com/knownsec/Pocsuite/issues"
-GIT_REPOSITORY = "git@github.com:knownsec/Pocsuite.git"
+GIT_REPOSITORY = "https://github.com/knownsec/Pocsuite.git"
 GIT_PAGE = "https://github.com/knownsec/Pocsuite"
 
 LEGAL_DISCLAIMER = "Usage of pocsuite for attacking targets without prior mutual consent is illegal."
@@ -45,18 +46,22 @@ UNICODE_ENCODING = "utf-8"
 # Format used for representing invalid unicode characters
 INVALID_UNICODE_CHAR_FORMAT = r"\?%02x"
 
-USAGE = "python pocsuite.py [options]"
+USAGE = "pocsuite [options]"
 
 INDENT = " " * 2
 
-POC_ATTRS = ("vulID", "version", "author", "vulDate", "name", "appVersion", "samples", "desc", "createDate", "updateDate", "references", "appPowerLink", "vulType", "appName")
+POC_ATTRS = ("vulID", "version", "author", "vulDate", "name", "appVersion", "desc", "createDate", "updateDate", "references", "appPowerLink", "vulType", "appName")
 
 POC_IMPORTDICT = {
-    "from pocsuite.net import": "from lib.request.basic import",
-    "from pocsuite.poc import": "from lib.core.poc import",
-    "from pocsuite.utils import register": "from lib.core.register import registerPoc as register",
-    "from pocsuite.lib": "from lib"
+    "from pocsuite.net import": "from pocsuite.lib.request.basic import",
+    "from pocsuite.poc import": "from pocsuite.lib.core.poc import",
+    "from pocsuite.utils import register": "from pocsuite.lib.core.register import registerPoc as register",
 }
+
+POC_REGISTER_STRING = "\nfrom pocsuite.api.poc import register\nregister({})"
+POC_REGISTER_REGEX = "register\(.*\)"
+POC_CLASSNAME_REGEX = "class\s+(.*?)\(POCBase\)"
+POC_REQUIRES_REGEX = "install_requires\s*?=\s*?\[(.*?)\]"
 
 OLD_VERSION_CHARACTER = ("from comm import cmdline", "from comm import generic")
 
@@ -77,6 +82,8 @@ PCS_OPTIONS = {
     'urlFile': None,
     'agent': None,
     'pocFile': None,
+    'isPocString': False,
+    'pocname': None,
     'referer': None,
     'Mode': 'verify',
     'cookie': None,
@@ -84,7 +91,10 @@ PCS_OPTIONS = {
     'report': None,
     'proxy': None,
     'proxyCred': None,
-    'timeout': 5
+    'timeout': 5,
+    'quiet': False,
+    'requires': False,
+    'requiresFreeze': False
 }
 
 REPORT_TABLEBASE = """\
@@ -100,8 +110,22 @@ REPORT_HTMLBASE = """\
             <meta charset="utf-8">
             <title></title>
             <style type="text/css">
-            caption{padding-top:8px;padding-bottom:8px;color:#777;text-align:left}th{text-align:left}.table{width:100%%;max-width:100%%;margin-bottom:20px}.table>thead>tr>th,.table>tbody>tr>th,.table>tfoot>tr>th,.table>thead>tr>td,.table>tbody>tr>td,.table>tfoot>tr>td{padding:8px;line-height:1.42857143;vertical-align:top;border-top:1px solid #ddd}.table>thead>tr>th{vertical-align:bottom;border-bottom:2px solid #ddd}
+            caption{padding-top:8px;padding-bottom:8px;color:#777;text-align:left}th{text-align:left}.table{width:100%%;max-width:100%%;margin-bottom:20px}.table>thead>tr>th,.table>tbody>tr>th,.table>tfoot>tr>th,.table>thead>tr>td,.table>tbody>tr>td,.table>tfoot>tr>td{padding:8px;line-height:1.42857143;vertical-align:top;border-top:1px solid #ddd}.table>thead>tr>th{vertical-align:bottom;border-bottom:2px solid #ddd}.result0{display:none}.result1{}.status{cursor: pointer;}
             </style>
+            <script>
+                function showDetail(dom){
+                    parent = dom.parentElement;
+                    detail = parent.children[1];
+                    if (detail == undefined){
+                        return;
+                    };
+                    if (detail.className == 'result0'){
+                        detail.className = 'result1';
+                    }else{
+                        detail.className = 'result0';
+                    };
+                }
+            </script>
         </head>
         <body>
             <div class="container">

@@ -2,21 +2,22 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2014-2015 pocsuite developers (http://sebug.net)
+Copyright (c) 2014-2016 pocsuite developers (https://seebug.org)
 See the file 'docs/COPYING' for copying permission
 """
 
 import collections
-from lib.core.data import conf
-from thirdparty import requests
-from thirdparty.requests.hooks import default_hooks
-from thirdparty.requests.models import DEFAULT_REDIRECT_LIMIT
-from thirdparty.requests.models import REDIRECT_STATI
-from thirdparty.requests.cookies import cookiejar_from_dict
-from thirdparty.requests.compat import OrderedDict
-from thirdparty.requests.adapters import HTTPAdapter
-from thirdparty.requests.structures import CaseInsensitiveDict
-from thirdparty.requests.packages.urllib3._collections import RecentlyUsedContainer
+from pocsuite.lib.core.data import conf
+from pocsuite.thirdparty import requests
+from pocsuite.thirdparty.requests.hooks import default_hooks
+from pocsuite.thirdparty.requests.models import DEFAULT_REDIRECT_LIMIT
+from pocsuite.thirdparty.requests.models import REDIRECT_STATI
+from pocsuite.thirdparty.requests.cookies import cookiejar_from_dict
+from pocsuite.thirdparty.requests.compat import OrderedDict
+from pocsuite.thirdparty.requests.adapters import HTTPAdapter
+from pocsuite.thirdparty.requests.structures import CaseInsensitiveDict
+from pocsuite.thirdparty.requests.utils import default_headers
+from pocsuite.thirdparty.requests.packages.urllib3._collections import RecentlyUsedContainer
 
 
 def requestsPatch():
@@ -34,7 +35,7 @@ def requestsPatch():
 
     def setDefaultHeaders():
         def session_init(self):
-            self.headers = CaseInsensitiveDict(conf.httpHeaders)
+            self.headers = CaseInsensitiveDict(conf.httpHeaders) if 'httpHeaders' in conf else default_headers()
             self.auth = None
             self.proxies = {}
             self.hooks = default_hooks()

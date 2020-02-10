@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2014-2015 pocsuite developers (http://sebug.net)
+Copyright (c) 2014-2016 pocsuite developers (https://seebug.org)
 See the file 'docs/COPYING' for copying permission
 """
 
-from lib.core.datatype import AttribDict
+from pocsuite.lib.core.datatype import AttribDict
 
 defaults = {
     "threads": 1,

@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2014-2015 pocsuite developers (http://sebug.net)
+Copyright (c) 2014-2016 pocsuite developers (https://seebug.org)
 See the file 'docs/COPYING' for copying permission
 """
-from lib.request.requestspatch import requestsPatch
+from pocsuite.lib.request.requestspatch import requestsPatch
 
-import thirdparty.requests as req
+import pocsuite.thirdparty.requests as req
 
 requestsPatch()

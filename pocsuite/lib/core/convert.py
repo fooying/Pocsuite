@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2014-2015 pocsuite developers (http://sebug.net)
+Copyright (c) 2014-2016 pocsuite developers (https://seebug.org)
 See the file 'docs/COPYING' for copying permission
 """
 
-from lib.core.settings import IS_WIN, UNICODE_ENCODING
+import sys
+from pocsuite.lib.core.settings import IS_WIN, UNICODE_ENCODING
 
 
 def singleTimeWarnMessage(message):  # Cross-linked function
